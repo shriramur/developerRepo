@@ -1,0 +1,41 @@
+name: Trigger Playwright Tests
+
+on:
+  push:
+    branches: [ main, develop ]  # Change these to your target branches
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  trigger-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Playwright Tests in test-repo
+      run: |
+        echo "🚀 Triggering Playwright tests..."
+        
+        response=$(curl -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.PLAYWRIGHT_TRIGGER_TOKEN }}" \
+          -w "%{http_code}" \
+          -s \
+          https://api.github.com/repos/shriramur/playwrightCopilotFramework/dispatches \
+          -d '{
+            "event_type": "run-playwright-tests",
+            "client_payload": {
+              "repository": "${{ github.repository }}",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}",
+              "triggered_by": "${{ github.actor }}",
+              "branch": "${{ github.ref_name }}"
+            }
+          }')
+        
+        if [ "$response" = "204" ]; then
+          echo "✅ Successfully triggered Playwright tests!"
+          echo "🔗 Check progress at: https://github.com/shriramur/playwrightCopilotFramework/actions"
+        else
+          echo "❌ Failed to trigger tests. HTTP status: $response"
+          exit 1
+        fi
